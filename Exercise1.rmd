@@ -1,71 +1,102 @@
 ---
-title: "QMB Exercise 1 - Exploring Housing Rents"
-author: "Dino Nienhold"
-date: "Wednesday, February 18, 2015"
+title: "QMB Exercise 3 - Regression for Wal Mart Dataset"
+author: "Karin Gryzlak & Dino Nienhold"
+date: "Thursday, May 27, 2015"
 output: pdf_document
 ---
 
 #Introduction
-The following report is based on the QMB Exercise 1 - Exploring Housing Rents. The task description pdf file is bis_ex1-HousingRents.pdf
+The following report is based on the QMB Exercise 3 - Multiple Regression. The task description pdf file is Exercise-Walmart-20150520.pdf.
 
 #Requirements
 Please make sure that you the following packages loaded in your workspace.
 ```{r}
 library("dplyr")
 library("ggplot2")
+library("leaps")
+library("car")
 ```
 
 #Data Set
 Please make sure you have the file housingrents.csv in the subdirectoy Data in your workspace.
 ```{r}
-housingrents <- read.csv("./Data/housingrents.csv",sep=";")
+walmart <- read.csv("./data/Wal-Mart_revenue.csv",sep=";")
 ```
 
-#Task 1
-There are `dim(housingrents)[1]` observations and `dim(housingrents)[2]` variables in the dataset.
-The str command gives an overview of the variable types:
-```{r}
-str(housingrents)
-```
-There are 14 NA values in the balcony variable.
-```{r}
-summary(housingrents)
-```
-#Task 2
+#Problem 1
 
-##Data Processing
-For analysis purposes it is necessary to convert the rooms and nre variable to a factor.
+#Problem 2
+In Task 2 we continue the multiple regression but introduce an indicator variable December.
+
+###1.
+Calculate the regression model with the four explanatory variables RetailSalesIndex, PersonalConsumption, CPI and December. 
+Discuss the individual coefficients including their significance and explain what the coefficient for December means.
 ```{r}
-housingrents <- mutate(housingrents, rooms = factor(rooms), nre = factor(nre,levels=c(0,1),labels=c("no","yes")))
+walmartLm <- lm(WalMartRevenue~RetailSalesIndex+PersonalConsumption+CPI+December, data = walmart)
+summary(walmartLm)
+```
+The coefficients for RetailSalesIndex, PersonalConsumption and CPI are in the Range of 0.00001 to 0.03 which means that a small change in these indexes have an impact on Wal Marts sales revenue. However their significance is far above 0.05, which means that the coefficients value for this sample could be due to chance. The indicator variable December adds 9.39 to the Intercept, which means that the revenue is nearly 10 units higher in December than for non December month.
+The adjusted R^2 is 0.7832, which means that the model explains the variance to a large degree.
+
+###2.
+Check the diagnostic plots. Comments?
+```{r}
+par(mfrow = c(2, 2))
+plot(walmartLm)
+```
+The Normal Q-Q plot shows that the distribution is not normal distributed and has some outliers.
+The residual vs. fitted plot are sparse on the right bottom. Additionally outliers 23, 28 and 21 pull the fitted line up respectively down, which means they have a high leverage. In the residuals vs.leverage plot the points 23, 26 and 39 are shown again. These outliers would have to be checked and dealt with.
+
+###3.
+Does it seem that Wal-Marts’s revenue is closely related to the general state of the economy?
+The general state of the economy here is represented by the variables in the regression
+equation?
+
+Yes, the F statistic and R^2 is rather large. The p-value for the F-statistic allows to reject that $\sf{H_{0}}$ = 0.
+
+##Problem 3
+
+###1.
+*Use the full model with all variables to find a best subset model with the BIC criterion
+(Use Models/subset model selection ...).
+```{r}
+le <- regsubsets(walmart$WalMartRevenue~walmart$RetailSalesIndex+walmart$PersonalConsumption+walmart$CPI+walmart$December,data=walmart)
+plot(le,scale="bic")
+```
+The model with the coeficient CPI and December do have the smallest BCI value and is therefore the best suited model measured with the Bayesian Information Criteria.
+
+###2.
+Drop the variables RetailSalesIndex and PersonalConsumption from the regression, i.e. recalculate the regression with just CPI and December as explanatory variables.
+```{r}
+walmartLm <- lm(WalMartRevenue~CPI+December, data = walmart)
+summary(walmartLm)
 ```
 
-##Plotting
-The following chart shows the frequency of appartments according to their numberof rooms.
+###3.
+Check the diagnostic plots. Comments?
 ```{r}
-ggplot(data=housingrents, aes(x=rooms,label=rooms))  + geom_bar(fill="blue") + ggtitle("Count by Rooms") 
+par(mfrow = c(2, 2))
+plot(walmartLm)
 ```
+The plots do show a much better fit of residuals to fitted respectively leverage. Additionally the model follows much more a normal distribution than the previous model.
 
-#Task 3
+###4.
+Does it seem that Wal-Marts’s revenue is closely related to the general state of the economy?
+Yes, compared to the previous models this model coefficients show high significance. The R^2 value is very high, meaning the model explains the variability ad the F-Statistic is large and also highly significant.
+
+###5.
+*Compare this last model with two explanatory variables with the full model containing four
+explanatory variables with an F-test.
 ```{r}
-rooms2nre <- xtabs(~rooms+nre, data=housingrents)
-rooms2nre <- prop.table(rooms2nre,1)
-ggplot(data.frame(rooms2nre), aes(x=rooms, y=Freq, fill=nre)) + geom_bar(stat="identity") + 
-  xlab("Number of Rooms") + ylab("Ratio of NRE Property to non-Property") + 
-  ggtitle("NRE Property by Number of Rooms") 
-addmargins(prop.table(rooms2nre,1))
+walmartBestLm <- lm(WalMartRevenue~CPI+December, data = walmart)
+walmartFullLm <- lm(WalMartRevenue~RetailSalesIndex+PersonalConsumption+CPI+December, data = walmart)
+anova(walmartBestLm,walmartFullLm)
 ```
+Given the F value of 0.2354 and the high p-value of 0.7915. We cannot reject the $\sf{H_{0}}$ so that the full model with the variables RetailSalesIndex and PersonalConsumption do contribute additional information.
 
-http://stats.stackexchange.com/questions/798/calculating-optimal-number-of-bins-in-a-histogram-for-n-where-n-ranges-from-30
+###6.
+Use the Durbin-Watson test to see whether the residuals exhibit autocorrelation.
 ```{r}
-bw <- diff(range(housingrents$area)) / (2 * IQR(housingrents$area) / length(housingrents$area)^(1/3))
-
-cfunc <- function(x, n) (sqrt(n) * (mean(x) - (1/lambda))) / (1/lambda)
-dat <- data.frame(x = apply(data, 2, cfunc, 40),size = factor(rep(c(40), rep(numberSimulation, 1))))
-g <- ggplot(housingrents, aes(x = area)) + geom_histogram(binwidth = bw,colour="black", fill="white")  + geom_density(alpha=.2) + geom_density(alpha=.5, fill="#FF6666") +
-    geom_vline(aes(xintercept=mean(area, na.rm=T)), color="red", linetype="dashed", size=1)
-g <- ggplot(data.frame(x), aes(x = data.frame(x)[1])) + geom_histogram() 
-g <- g + stat_function(fun = dnorm, size=50)
-g + facet_grid(. ~ size)
-qqnorm(housingrents$area);qqline(housingrents$area, col = 2)
-boxplot(housingrents$area)
+durbinWatsonTest(walmartBestLm)
 ```
+Given that the D-W Statistic is outside the [1.5-2.5] and the p-value is < 0.05, we fail to reject $\sf{H_{0}}$ that the residuals are not autocorrelated. Therefore a time series model might be a better fit.
