@@ -10,7 +10,7 @@ The following report is based on the QMB Exercise 3 - Multiple Regression. The t
 
 #Requirements
 Please make sure that you the following packages loaded in your workspace.
-```{r}
+```{r, message=F, warning=F}
 library("dplyr")
 library("ggplot2")
 library("leaps")
@@ -23,7 +23,13 @@ Please make sure you have the file housingrents.csv in the subdirectoy Data in y
 walmart <- read.csv("./data/Wal-Mart_revenue.csv",sep=";")
 ```
 
+\pagebreak
+
+
 #Problem 1
+
+\pagebreak
+
 
 #Problem 2
 In Task 2 we continue the multiple regression but introduce an indicator variable December.
@@ -53,6 +59,8 @@ The general state of the economy here is represented by the variables in the reg
 equation?
 
 Yes, the F statistic and R^2 is rather large. The p-value for the F-statistic allows to reject that $\sf{H_{0}}$ = 0.
+
+\pagebreak
 
 ##Problem 3
 
