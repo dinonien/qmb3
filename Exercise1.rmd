@@ -15,6 +15,7 @@ library("dplyr")
 library("ggplot2")
 library("leaps")
 library("car")
+library("QuantPsyc")
 ```
 
 #Data Set
@@ -28,8 +29,50 @@ walmart <- read.csv("./data/Wal-Mart_revenue.csv",sep=";")
 
 #Problem 1
 
+###Task 1
+Create a scatterplot matrix with the variables in the data set. Comment!
+```{r}
+scatterplotMatrix(~CPI+PersonalConsumption+RetailSalesIndex+WalMartRevenue, 
+  reg.line=lm, smooth=TRUE, spread=FALSE, span=0.5, id.n=0, diagonal = 'boxplot', data=walmart)
+```
+CPI and PersonalConsumption have a high positive correlation, this means the variables have a strong relationship between each other and an almost normal distribution.
+RetailSalesIndex and WalMartRevenue have a low positive correlation. Both have outliers which are shown in the upper part of the boxplot. The other varialbes have no or a low positive correlation.
+
 \pagebreak
 
+###Task 2
+Fit a regression with response WalMartRevenue and explanatory variables RetailSalesIndex,
+PersonalConsumption and CPI.
+```{r}
+walmartLm <- lm(WalMartRevenue~CPI+PersonalConsumption+RetailSalesIndex, 
+                data=walmart)
+summary(walmartLm)
+```
+
+\pagebreak
+
+###Task 3
+Comment the diagnostic plots and identify outliers and leverage points!
+```{r}
+par(mfrow = c(2, 2))
+plot(walmartLm)
+```
+On the plot residuals vs. fitted values there are at least 3 outliers (23 / 28 / 21) which should be checked in detail. The data has to be checked to see what causes the outliers. The Norm Q-Q plots shows an almost normal distribution, there are 3 outliers (23 / 28 / 21) at the bottom and top of the 
+distriubution. There are leverage points like 23, 26 and 39 which can have a negative influence on the regression and "attract" the regression line to them.
+
+###Task 4
+Does it seem that Wal-Marts’s revenue is closely related to the general state of the economy?
+Yes, the F statistic and R^2 is rather large. The p-value for the F-statistic allows to reject that $\sf{H_{0}}$ = 0.
+
+\pagebreak
+
+###Task 5
+Calculate the standardised regression coefficients for the three explanatory variables and
+discuss the relevance of the variables.
+```{r}
+lm.beta(walmartLm)
+```
+An increase in the consumer price index has a negative impact on Wal-Mart's revenue. Both the personal consumption and retail sales index increase have a positive impact.
 
 #Problem 2
 In Task 2 we continue the multiple regression but introduce an indicator variable December.
@@ -38,7 +81,8 @@ In Task 2 we continue the multiple regression but introduce an indicator variabl
 Calculate the regression model with the four explanatory variables RetailSalesIndex, PersonalConsumption, CPI and December. 
 Discuss the individual coefficients including their significance and explain what the coefficient for December means.
 ```{r}
-walmartLm <- lm(WalMartRevenue~RetailSalesIndex+PersonalConsumption+CPI+December, data = walmart)
+walmartLm <- lm(WalMartRevenue~RetailSalesIndex+PersonalConsumption+CPI+December, 
+                data = walmart)
 summary(walmartLm)
 ```
 The coefficients for RetailSalesIndex, PersonalConsumption and CPI are in the Range of 0.00001 to 0.03 which means that a small change in these indexes have an impact on Wal Marts sales revenue. However their significance is far above 0.05, which means that the coefficients value for this sample could be due to chance. The indicator variable December adds 9.39 to the Intercept, which means that the revenue is nearly 10 units higher in December than for non December month.
@@ -68,7 +112,8 @@ Yes, the F statistic and R^2 is rather large. The p-value for the F-statistic al
 *Use the full model with all variables to find a best subset model with the BIC criterion
 (Use Models/subset model selection ...).
 ```{r}
-le <- regsubsets(walmart$WalMartRevenue~walmart$RetailSalesIndex+walmart$PersonalConsumption+walmart$CPI+walmart$December,data=walmart)
+le <- regsubsets(walmart$WalMartRevenue~walmart$RetailSalesIndex+walmart
+                  $PersonalConsumption+walmart$CPI+walmart$December,data=walmart)
 plot(le,scale="bic")
 ```
 The model with the coeficient CPI and December do have the smallest BCI value and is therefore the best suited model measured with the Bayesian Information Criteria.
@@ -97,7 +142,8 @@ Yes, compared to the previous models this model coefficients show high significa
 explanatory variables with an F-test.
 ```{r}
 walmartBestLm <- lm(WalMartRevenue~CPI+December, data = walmart)
-walmartFullLm <- lm(WalMartRevenue~RetailSalesIndex+PersonalConsumption+CPI+December, data = walmart)
+walmartFullLm <- lm(WalMartRevenue~RetailSalesIndex+PersonalConsumption+
+                      CPI+December, data = walmart)
 anova(walmartBestLm,walmartFullLm)
 ```
 Given the F value of 0.2354 and the high p-value of 0.7915. We cannot reject the $\sf{H_{0}}$ so that the full model with the variables RetailSalesIndex and PersonalConsumption do contribute additional information.
